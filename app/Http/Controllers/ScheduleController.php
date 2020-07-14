@@ -13,9 +13,11 @@ use App\Investigation;
 use App\Treatment;
 use App\District;
 use App\Schedule;
+use App\Sms_log;
 class ScheduleController extends Controller
 {
     public function index(){
+        
         $current_date = date("Y-m-d");
         $patient = Patient::where('patients.status_id', 1)->orWhere('patients.status_id', 2)
         ->leftJoin('users', 'patients.field_officer_id', '=', 'users.id')
@@ -45,6 +47,7 @@ class ScheduleController extends Controller
 
             // echo "Current_date : ".$current_date;
             // echo "<br>week date : ".$first_rem_week;
+            // echo "<br>2 days date : ".$first_rem_days;
             // die;
 
             if($first_rem_week == $current_date || $first_rem_days == $current_date){
@@ -62,7 +65,41 @@ class ScheduleController extends Controller
 
             if($flag){
                 /* SMS send code */
+        $msg_fo = 'second message';
+        $msg_patient = 'first message';
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => "http://localhost/sms_api.php",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => "",
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => "POST",
+        CURLOPT_POSTFIELDS => array('destination' => $patient_mobile_no,'message' => $msg_patient),
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
 
+
+
+        $curl1 = curl_init();
+
+        curl_setopt_array($curl1, array(
+        CURLOPT_URL => "http://localhost/sms_api.php",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => "",
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => "POST",
+        CURLOPT_POSTFIELDS => array('destination' => $fo_mobile_no,'message' => $msg_fo),
+        ));
+        $response1 = curl_exec($curl1);
+        curl_close($curl1);
+        
                 /* save logs to database */
                 $fields = array(
                     'patient_name'=> $patient_name, 
@@ -74,6 +111,17 @@ class ScheduleController extends Controller
                 );
 
                 $schedule = Schedule::create($fields);
+
+                $save1 = Sms_log::create([
+                    'mobile_no' => $fo_mobile_no,
+                    'message' => $msg_fo,
+                    'response' => $response1
+                ]);
+                $save = Sms_log::create([
+                    'mobile_no' => $patient_mobile_no,
+                    'message' => $msg_patient,
+                    'response' => $response
+                ]);
             }
             
         }

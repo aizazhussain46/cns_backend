@@ -8,6 +8,7 @@ use App\Role;
 use App\Status;
 use App\Patient;
 use App\Schedule;
+use App\Sms_log;
 use Illuminate\Support\Facades\Auth;
 use Validator;
 class PatientController extends Controller
@@ -75,6 +76,40 @@ class PatientController extends Controller
         
         $fo = User::find($pat->field_officer_id);
         /* SMS send code */
+        $msg_fo = 'second message';
+        $msg_patient = 'first message';
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => "http://localhost/sms_api.php",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => "",
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => "POST",
+        CURLOPT_POSTFIELDS => array('destination' => $pat->p_mobile_no,'message' => $msg_patient),
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
+
+
+
+        $curl1 = curl_init();
+
+        curl_setopt_array($curl1, array(
+        CURLOPT_URL => "http://localhost/sms_api.php",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => "",
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => "POST",
+        CURLOPT_POSTFIELDS => array('destination' => $fo->mobile_no,'message' => $msg_fo),
+        ));
+        $response1 = curl_exec($curl1);
+        curl_close($curl1);
 
         /* save logs to database */
         $type = 'patient register';
@@ -87,7 +122,16 @@ class PatientController extends Controller
         );
 
         $schedule = Schedule::create($fields);
-
+        $save1 = Sms_log::create([
+            'mobile_no' => $fo->mobile_no,
+            'message' => $msg_fo,
+            'response' => $response1
+        ]);
+        $save = Sms_log::create([
+            'mobile_no' => $pat->p_mobile_no,
+            'message' => $msg_patient,
+            'response' => $response
+        ]);
 
 
 		$patient = Patient::where('patients.id', $pat->id)->leftJoin('users', 'patients.user_id', '=', 'users.id')
